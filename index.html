@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Pertarungan Pemain</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            min-height: 100vh;
+            /* Menggunakan warna gradien dari Bootstrap */
+            background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-secondary) 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 20px;
+            color: var(--bs-light);
+        }
+
+        .game-title {
+            color: var(--bs-light);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 25px;
+            font-size: 2.5rem;
+        }
+
+        .selection-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .selection-card {
+            background: var(--bs-light);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            color: var(--bs-dark);
+        }
+
+        .player-option {
+            border: 3px solid var(--bs-light);
+            border-radius: 15px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            background-color: var(--bs-gray-100);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+        }
+
+        .player-option:hover {
+            border-color: var(--bs-primary);
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .player-option.selected {
+            border-color: var(--bs-primary);
+            background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-secondary) 100%);
+            color: var(--bs-light);
+        }
+
+        .player-avatar {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .player-stats p {
+            margin: 8px 0;
+            font-size: 1.1rem;
+        }
+
+        .stat-hp { color: var(--bs-danger); }
+        .stat-energy { color: var(--bs-info); }
+        .stat-normal { color: var(--bs-warning); }
+        .stat-ultimate { color: var(--bs-primary); }
+
+        .battle-arena {
+            display: none;
+            padding: 10px 0;
+            flex: 1;
+        }
+
+        .battle-arena.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fighter-card {
+            background: var(--bs-light);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            position: relative;
+            color: var(--bs-dark);
+            border: 4px solid var(--bs-gray-300);
+        }
+
+        .fighter-card.player {
+            border-color: var(--bs-info);
+        }
+
+        .fighter-card.opponent {
+            border-color: var(--bs-danger);
+        }
+
+        .fighter-card.active-turn {
+            border-color: var(--bs-warning);
+            box-shadow: 0 0 30px rgba(243, 156, 18, 0.6);
+        }
+
+        .fighter-card.active-turn::before {
+            content: "GILIRAN ANDA!";
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bs-warning);
+            color: var(--bs-dark);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+
+        .fighter-card.opponent.active-turn::before {
+            content: "GILIRAN LAWAN!";
+        }
+
+        .fighter-avatar {
+            font-size: 5rem;
+            text-align: center;
+            margin-bottom: 20px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stat-bar {
+            margin-bottom: 20px;
+        }
+
+        .stat-label {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--bs-dark);
+        }
+
+        .progress {
+            height: 35px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            background-color: var(--bs-gray-200);
+        }
+
+        .progress-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            transition: width 0.5s ease;
+        }
+
+        .hp-bar {
+            background: linear-gradient(90deg, var(--bs-danger), #c0392b);
+        }
+
+        .energy-bar {
+            background: linear-gradient(90deg, var(--bs-info), #2980b9);
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .attack-btn {
+            padding: 15px 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            border: none;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+        }
+
+        .attack-btn span {
+            font-size: 0.85rem;
+            font-weight: normal;
+            opacity: 0.95;
+            margin-top: 4px;
+        }
+
+        .attack-btn:hover:not(:disabled) {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.2);
+        }
+
+        .attack-btn:active:not(:disabled) {
+            transform: translateY(2px);
+        }
+
+        .attack-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-normal { background: linear-gradient(135deg, var(--bs-warning) 0%, #d35400 100%); }
+        .btn-ultimate { background: linear-gradient(135deg, var(--bs-primary) 0%, #6a11cb 100%); }
+        .btn-heal { background: linear-gradient(135deg, var(--bs-success) 0%, #27ae60 100%); }
+        .btn-skip { background: linear-gradient(135deg, var(--bs-secondary) 0%, #7f8c8d 100%); }
+
+        .message-box {
+            background: var(--bs-light);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--bs-dark);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            border: 2px solid var(--bs-gray-200);
+        }
+
+        .turn-indicator {
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        .vs-text {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: white;
+            margin: 25px 0;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.1);
+            padding: 10px;
+            border-radius: 15px;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .game-over-modal .modal-content {
+            border-radius: 20px;
+            border: none;
+            background: var(--bs-light);
+            color: var(--bs-dark);
+        }
+
+        .game-over-modal .modal-header {
+            background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .game-over-modal .modal-title {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .game-over-message {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .game-over-message .winner {
+            color: var(--bs-success);
+        }
+
+        .game-over-message .loser {
+            color: var(--bs-danger);
+        }
+
+        .game-over-modal .modal-footer {
+            padding: 20px;
+            border: none;
+            justify-content: center;
+            background-color: var(--bs-gray-100);
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-secondary) 100%);
+            border: none;
+            padding: 12px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            width: 100%;
+            max-width: 250px;
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-restart:hover {
+            opacity: 0.95;
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        /* Responsif */
+        @media (max-width: 768px) {
+            .selection-card {
+                padding: 30px 20px;
+            }
+            .player-option {
+                padding: 25px 10px;
+            }
+            .player-avatar {
+                font-size: 3.5rem;
+            }
+            .game-title {
+                font-size: 2.2rem;
+            }
+            .fighter-avatar {
+                font-size: 4.5rem;
+            }
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+            .attack-btn {
+                padding: 18px 10px;
+            }
+            .message-box {
+                font-size: 1.1rem;
+                min-height: 75px;
+            }
+            .turn-indicator {
+                font-size: 1.2rem;
+            }
+            .vs-text {
+                font-size: 2rem;
+            }
+            .game-over-message {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Selection Screen -->
+    <div id="selectionScreen" class="selection-screen">
+        <div class="selection-card">
+            <h1 class="text-center mb-4">🎮 Pilih Pemain Anda</h1>
+            <p class="text-center text-muted mb-4">Pilih pemain yang ingin Anda kendalikan</p>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="player-option" onclick="selectPlayer(0)">
+                        <div class="player-avatar">🥷</div>
+                        <h3>Andi</h3>
+                        <div class="player-stats">
+                            <p class="stat-hp mb-1"><strong>❤️ HP:</strong> 100</p>
+                            <p class="stat-energy mb-1"><strong>⚡ Energi:</strong> 10</p>
+                            <p class="stat-normal mb-1"><strong>⚔️ Normal:</strong> 15</p>
+                            <p class="stat-ultimate mb-0"><strong>💥 Ultimate:</strong> 35</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="player-option" onclick="selectPlayer(1)">
+                        <div class="player-avatar">🦸</div>
+                        <h3>Donny</h3>
+                        <div class="player-stats">
+                            <p class="stat-hp mb-1"><strong>❤️ HP:</strong> 100</p>
+                            <p class="stat-energy mb-1"><strong>⚡ Energi:</strong> 5</p>
+                            <p class="stat-normal mb-1"><strong>⚔️ Normal:</strong> 20</p>
+                            <p class="stat-ultimate mb-0"><strong>💥 Ultimate:</strong> 40</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="startBtn" class="btn btn-primary btn-lg w-100 mt-4" style="display: none;" onclick="startBattle()">
+                <i class="fas fa-play"></i> Mulai Pertarungan
+            </button>
+        </div>
+    </div>
+
+    <!-- Battle Arena -->
+    <div id="battleArena" class="battle-arena">
+        <div class="container arena-container">
+            <h1 class="game-title text-center">⚔️ Arena Pertarungan ⚔️</h1>
+
+            <div class="turn-indicator" id="turnIndicator">
+                Giliran ke-1
+            </div>
+
+            <div class="message-box" id="messageBox">
+                Pertarungan dimulai!
+            </div>
+
+            <div class="vs-text">VS</div>
+
+            <div class="row">
+                <!-- Player Card -->
+                <div class="col-lg-6">
+                    <div class="fighter-card player" id="playerCard">
+                        <div class="fighter-avatar" id="playerAvatar">🥷</div>
+                        <h2 class="text-center mb-3" id="playerName">Andi (Anda)</h2>
+
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>❤️ HP</span>
+                                <span id="playerHpText">100/100</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar hp-bar" id="playerHpBar" style="width: 100%"></div>
+                            </div>
+                        </div>
+
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>⚡ Energi</span>
+                                <span id="playerEnergyText">10/10</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar energy-bar" id="playerEnergyBar" style="width: 100%"></div>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn btn-normal attack-btn" onclick="playerAttack('normal')">
+                                <i class="fas fa-fist-raised"></i>
+                                <span>Serangan Biasa (2 ⚡)</span>
+                            </button>
+                            <button class="btn btn-ultimate attack-btn" onclick="playerAttack('ultimate')">
+                                <i class="fas fa-fire"></i>
+                                <span>Ultimate (5 ⚡)</span>
+                            </button>
+                            <button class="btn btn-heal attack-btn" onclick="playerHeal()">
+                                <i class="fas fa-utensils"></i>
+                                <span>Makan (Heal) (1 ⚡)</span>
+                            </button>
+                            <button class="btn btn-skip attack-btn" onclick="playerSkip()">
+                                <i class="fas fa-redo"></i>
+                                <span>Skip (+3 ⚡)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opponent Card -->
+                <div class="col-lg-6">
+                    <div class="fighter-card opponent" id="opponentCard">
+                        <div class="fighter-avatar" id="opponentAvatar">🦸</div>
+                        <h2 class="text-center mb-3" id="opponentName">Donny (Lawan)</h2>
+
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>❤️ HP</span>
+                                <span id="opponentHpText">100/100</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar hp-bar" id="opponentHpBar" style="width: 100%"></div>
+                            </div>
+                        </div>
+
+                        <div class="stat-bar">
+                            <div class="stat-label">
+                                <span>⚡ Energi</span>
+                                <span id="opponentEnergyText">5/5</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar energy-bar" id="opponentEnergyBar" style="width: 100%"></div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info text-center mt-3">
+                            <i class="fas fa-robot"></i> <strong>AI Lawan</strong><br>
+                            <small class="text-muted">Bersiap menyerang...</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal fade game-over-modal" id="gameOverModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title w-100 text-center">
+                        <i class="fas fa-gamepad"></i> Game Over!
+                    </h2>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <div class="game-over-message" id="gameOverMessage">
+                        <!-- Pesan akan diisi oleh JavaScript -->
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button class="btn btn-restart">
+                        <i class="fas fa-sync-alt"></i> Main Lagi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // JANGAN UBAH FUNGSI INI - KODE ASLI
+        function Pemain(nama, energi) {
+            this.nama = nama;
+            this.energi = energi;
+
+            this.makan = function(porsi) {
+                this.energi += porsi;
+                console.log(`Halo ${this.nama}, selamat makan`);
+            }
+
+            this.damage = function(attack) {
+                this.energi -= attack;
+                console.log(`Halo ${this.nama}, energi berkurang`);
+            }
+
+            setInterval(() => {
+                console.log(this.energi++);
+            }, 5000);
+        }
+
+        let pemain1 = new Pemain('Andi', 10);
+        let pemain2 = new Pemain('Donny', 5);
+        // AKHIR KODE ASLI
+
+        // Tambahan properties untuk game fighting
+        const gameData = {
+            player1: {
+                pemain: pemain1,
+                hp: 100,
+                maxHp: 100,
+                maxEnergy: 10,
+                energyRegen: 3,
+                normalAttack: 15,
+                ultimateAttack: 35,
+                avatar: '🥷'
+            },
+            player2: {
+                pemain: pemain2,
+                hp: 100,
+                maxHp: 100,
+                maxEnergy: 5,
+                energyRegen: 2,
+                normalAttack: 20,
+                ultimateAttack: 40,
+                avatar: '🦸'
+            }
+        };
+
+        let selectedPlayerIndex = null;
+        let currentPlayer = null;
+        let opponent = null;
+        let turn = 1;
+        let isPlayerTurn = true;
+        let gameOver = false;
+
+        function selectPlayer(index) {
+            selectedPlayerIndex = index;
+
+            // Update UI
+            const options = document.querySelectorAll('.player-option');
+            options.forEach((opt, i) => {
+                if (i === index) {
+                    opt.classList.add('selected');
+                } else {
+                    opt.classList.remove('selected');
+                }
+            });
+
+            document.getElementById('startBtn').style.display = 'block';
+        }
+
+        function startBattle() {
+            if (selectedPlayerIndex === null) {
+                alert('Pilih pemain terlebih dahulu!');
+                return;
+            }
+
+            // Set player dan opponent
+            if (selectedPlayerIndex === 0) {
+                currentPlayer = gameData.player1;
+                opponent = gameData.player2;
+            } else {
+                currentPlayer = gameData.player2;
+                opponent = gameData.player1;
+            }
+
+            // Reset stats
+            currentPlayer.hp = currentPlayer.maxHp;
+            currentPlayer.pemain.energi = currentPlayer.maxEnergy;
+            opponent.hp = opponent.maxHp;
+            opponent.pemain.energi = opponent.maxEnergy;
+
+            // Setup UI
+            document.getElementById('playerAvatar').textContent = currentPlayer.avatar;
+            document.getElementById('playerName').textContent = `${currentPlayer.pemain.nama} (Anda)`;
+            document.getElementById('opponentAvatar').textContent = opponent.avatar;
+            document.getElementById('opponentName').textContent = `${opponent.pemain.nama} (Lawan)`;
+
+            // Switch screens
+            document.getElementById('selectionScreen').style.display = 'none';
+            document.getElementById('battleArena').classList.add('active');
+
+            updateUI();
+            updateTurnUI();
+        }
+
+        function updateUI() {
+            // Update Player
+            const playerHpPercent = (currentPlayer.hp / currentPlayer.maxHp) * 100;
+            const playerEnergyPercent = (currentPlayer.pemain.energi / currentPlayer.maxEnergy) * 100;
+
+            document.getElementById('playerHpBar').style.width = playerHpPercent + '%';
+            document.getElementById('playerHpText').textContent = `${currentPlayer.hp}/${currentPlayer.maxHp}`;
+
+            document.getElementById('playerEnergyBar').style.width = playerEnergyPercent + '%';
+            document.getElementById('playerEnergyText').textContent = `${currentPlayer.pemain.energi}/${currentPlayer.maxEnergy}`;
+
+            // Update Opponent
+            const opponentHpPercent = (opponent.hp / opponent.maxHp) * 100;
+            const opponentEnergyPercent = (opponent.pemain.energi / opponent.maxEnergy) * 100;
+
+            document.getElementById('opponentHpBar').style.width = opponentHpPercent + '%';
+            document.getElementById('opponentHpText').textContent = `${opponent.hp}/${opponent.maxHp}`;
+
+            document.getElementById('opponentEnergyBar').style.width = opponentEnergyPercent + '%';
+            document.getElementById('opponentEnergyText').textContent = `${opponent.pemain.energi}/${opponent.maxEnergy}`;
+
+            // Update button states
+            const buttons = document.querySelectorAll('.attack-btn');
+            buttons[0].disabled = !isPlayerTurn || currentPlayer.pemain.energi < 2 || gameOver;
+            buttons[1].disabled = !isPlayerTurn || currentPlayer.pemain.energi < 5 || gameOver;
+            buttons[2].disabled = !isPlayerTurn || currentPlayer.pemain.energi < 1 || gameOver;
+            buttons[3].disabled = !isPlayerTurn || gameOver;
+        }
+
+        function updateTurnUI() {
+            document.getElementById('turnIndicator').textContent = `Giliran ke-${turn}`;
+
+            const playerCard = document.getElementById('playerCard');
+            const opponentCard = document.getElementById('opponentCard');
+
+            if (isPlayerTurn) {
+                playerCard.classList.add('active-turn');
+                opponentCard.classList.remove('active-turn');
+            } else {
+                playerCard.classList.remove('active-turn');
+                opponentCard.classList.add('active-turn');
+            }
+        }
+
+        function showMessage(text) {
+            document.getElementById('messageBox').textContent = text;
+        }
+
+        function playerAttack(type) {
+            if (!isPlayerTurn || gameOver) return;
+
+            const energyCost = type === 'normal' ? 2 : 5;
+            const damage = type === 'normal' ? currentPlayer.normalAttack : currentPlayer.ultimateAttack;
+
+            if (currentPlayer.pemain.energi < energyCost) {
+                showMessage('❌ Energi tidak cukup!');
+                return;
+            }
+
+            // Kurangi energi menggunakan fungsi damage dari Pemain
+            currentPlayer.pemain.damage(energyCost);
+
+            // Kurangi HP lawan
+            opponent.hp = Math.max(0, opponent.hp - damage);
+
+            const attackName = type === 'normal' ? 'Serangan Biasa' : 'Serangan Ultimate';
+            showMessage(`💥 ${currentPlayer.pemain.nama} menggunakan ${attackName}! ${opponent.pemain.nama} menerima ${damage} damage!`);
+
+            updateUI();
+
+            if (checkGameOver()) return;
+
+            // Ganti giliran
+            isPlayerTurn = false;
+            turn++;
+            updateTurnUI();
+
+            setTimeout(() => {
+                aiTurn();
+            }, 1500);
+        }
+
+        function playerHeal() {
+            if (!isPlayerTurn || gameOver) return;
+
+            const energyCost = 1;
+            const healAmount = 15;
+
+            if (currentPlayer.pemain.energi < energyCost) {
+                showMessage('❌ Energi tidak cukup!');
+                return;
+            }
+
+            // Kurangi energi menggunakan fungsi damage dari Pemain
+            currentPlayer.pemain.damage(energyCost);
+
+            // Tambah HP (gunakan fungsi makan untuk log)
+            currentPlayer.pemain.makan(0); // Tetap panggil untuk log console
+            currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount);
+
+            showMessage(`🍽️ ${currentPlayer.pemain.nama} makan! HP +${healAmount}`);
+
+            updateUI();
+
+            // Ganti giliran
+            isPlayerTurn = false;
+            turn++;
+            updateTurnUI();
+
+            setTimeout(() => {
+                aiTurn();
+            }, 1500);
+        }
+
+        function playerSkip() {
+            if (!isPlayerTurn || gameOver) return;
+
+            const energyBonus = 3;
+
+            // Tambah energi menggunakan fungsi makan dari Pemain
+            currentPlayer.pemain.makan(energyBonus);
+            currentPlayer.pemain.energi = Math.min(currentPlayer.pemain.energi, currentPlayer.maxEnergy);
+
+            showMessage(`⏭️ ${currentPlayer.pemain.nama} skip giliran! Energi +${energyBonus}`);
+
+            updateUI();
+
+            // Ganti giliran
+            isPlayerTurn = false;
+            turn++;
+            updateTurnUI();
+
+            setTimeout(() => {
+                aiTurn();
+            }, 1500);
+        }
+
+        function aiTurn() {
+            if (gameOver) return;
+
+            // Regenerasi energi musuh
+            const regenAmount = opponent.energyRegen;
+            opponent.pemain.makan(regenAmount);
+            opponent.pemain.energi = Math.min(opponent.pemain.energi, opponent.maxEnergy);
+
+            updateUI();
+
+            setTimeout(() => {
+                // AI decision making dengan prioritas heal
+                let action = 'attack';
+                let attackType = 'normal';
+                let energyCost = 2;
+                let damage = opponent.normalAttack;
+
+                // Prioritas 1: Heal jika HP rendah dan punya energi
+                if (opponent.hp < 40 && opponent.pemain.energi >= 1) {
+                    action = 'heal';
+                    energyCost = 1;
+                }
+                // Prioritas 2: Skip jika energi terlalu rendah
+                else if (opponent.pemain.energi < 2) {
+                    action = 'skip';
+                }
+                // Prioritas 3: Serang dengan ultimate jika bisa
+                else if (opponent.pemain.energi >= 5 && Math.random() > 0.4) {
+                    attackType = 'ultimate';
+                    energyCost = 5;
+                    damage = opponent.ultimateAttack;
+                }
+
+                if (action === 'heal') {
+                    // AI Heal
+                    opponent.pemain.damage(1);
+                    opponent.pemain.makan(0); // Log console
+                    opponent.hp = Math.min(opponent.maxHp, opponent.hp + 15);
+
+                    showMessage(`🍽️ ${opponent.pemain.nama} makan! HP +15`);
+                    updateUI();
+
+                    setTimeout(() => {
+                        continueAfterAI();
+                    }, 1000);
+                }
+                else if (action === 'skip') {
+                    // AI Skip
+                    opponent.pemain.makan(3);
+                    opponent.pemain.energi = Math.min(opponent.pemain.energi, opponent.maxEnergy);
+
+                    showMessage(`⏭️ ${opponent.pemain.nama} skip giliran! Energi +3`);
+                    updateUI();
+
+                    setTimeout(() => {
+                        continueAfterAI();
+                    }, 1000);
+                }
+                else {
+                    // AI Attack
+                    if (opponent.pemain.energi < energyCost) {
+                        showMessage(`⏭️ ${opponent.pemain.nama} tidak punya cukup energi untuk menyerang!`);
+
+                        setTimeout(() => {
+                            continueAfterAI();
+                        }, 1000);
+                        return;
+                    }
+
+                    opponent.pemain.damage(energyCost);
+                    currentPlayer.hp = Math.max(0, currentPlayer.hp - damage);
+
+                    const attackName = attackType === 'normal' ? 'Serangan Biasa' : 'Serangan Ultimate';
+                    showMessage(`⚔️ ${opponent.pemain.nama} menyerang dengan ${attackName}! ${currentPlayer.pemain.nama} menerima ${damage} damage!`);
+
+                    updateUI();
+
+                    if (checkGameOver()) return;
+
+                    setTimeout(() => {
+                        continueAfterAI();
+                    }, 1000);
+                }
+            }, 1000);
+        }
+
+        function continueAfterAI() {
+            // Regenerasi energi player
+            const playerRegenAmount = currentPlayer.energyRegen;
+            currentPlayer.pemain.makan(playerRegenAmount);
+            currentPlayer.pemain.energi = Math.min(currentPlayer.pemain.energi, currentPlayer.maxEnergy);
+
+            isPlayerTurn = true;
+            turn++;
+            updateTurnUI();
+            updateUI();
+        }
+
+        function checkGameOver() {
+            if (currentPlayer.hp <= 0) {
+                gameOver = true;
+                showGameOver(opponent.pemain.nama, currentPlayer.pemain.nama);
+                return true;
+            }
+
+            if (opponent.hp <= 0) {
+                gameOver = true;
+                showGameOver(currentPlayer.pemain.nama, opponent.pemain.nama);
+                return true;
+            }
+
+            return false;
+        }
+
+        function showGameOver(winner, loser) {
+            document.getElementById('gameOverMessage').innerHTML = `
+                <span class="winner">${winner}</span> Menang! 🎉<br>
+                <span class="loser">${loser}</span> Kalah!
+            `;
+
+            const modal = new bootstrap.Modal(document.getElementById('gameOverModal'));
+            modal.show();
+        }
+
+        function restartGame() {
+            // Reset game state
+            gameOver = false;
+            turn = 1;
+            isPlayerTurn = true;
+            selectedPlayerIndex = null;
+
+            // Reset pemain energi
+            pemain1.energi = 10;
+            pemain2.energi = 5;
+
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('gameOverModal'));
+            if (modal) modal.hide();
+
+            // Switch screens
+            document.getElementById('battleArena').classList.remove('active');
+            document.getElementById('selectionScreen').style.display = 'flex';
+            document.getElementById('startBtn').style.display = 'none';
+
+            // Reset selection
+            document.querySelectorAll('.player-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+        }
+    </script>
+</body>
+</html>
