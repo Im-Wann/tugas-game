@@ -10,7 +10,6 @@
     <style>
         body {
             min-height: 100vh;
-            /* Menggunakan warna gradien dari Bootstrap */
             background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-secondary) 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding-bottom: 20px;
@@ -235,6 +234,7 @@
         .btn-ultimate { background: linear-gradient(135deg, var(--bs-primary) 0%, #6a11cb 100%); }
         .btn-heal { background: linear-gradient(135deg, var(--bs-success) 0%, #27ae60 100%); }
         .btn-skip { background: linear-gradient(135deg, var(--bs-secondary) 0%, #7f8c8d 100%); }
+        .btn-inventory { background: linear-gradient(135deg, var(--bs-dark) 0%, #2c3e50 100%); }
 
         .message-box {
             background: var(--bs-light);
@@ -334,6 +334,78 @@
             opacity: 0.95;
             transform: scale(1.05);
             box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        /* Inventory Styles */
+        .inventory-modal .modal-content {
+            border-radius: 20px;
+            border: none;
+            background: var(--bs-light);
+            color: var(--bs-dark);
+        }
+
+        .inventory-modal .modal-header {
+            background: linear-gradient(135deg, var(--bs-success) 0%, var(--bs-info) 100%);
+            color: white;
+            border: none;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .inventory-section {
+            margin-bottom: 30px;
+        }
+
+        .item-card {
+            background: var(--bs-gray-100);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--bs-gray-300);
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .item-icon {
+            font-size: 1.5rem;
+        }
+
+        .item-stats {
+            font-size: 0.9rem;
+            color: var(--bs-secondary);
+        }
+
+        .btn-use-item {
+            background: var(--bs-success);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-use-item:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        .btn-use-item:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .inventory-footer {
+            padding: 15px;
+            background-color: var(--bs-gray-100);
+            border-radius: 0 0 20px 20px;
         }
 
         /* Responsif */
@@ -470,9 +542,9 @@
                                 <i class="fas fa-utensils"></i>
                                 <span>Makan (Heal) (1 ⚡)</span>
                             </button>
-                            <button class="btn btn-skip attack-btn" onclick="playerSkip()">
-                                <i class="fas fa-redo"></i>
-                                <span>Skip (+3 ⚡)</span>
+                            <button class="btn btn-inventory attack-btn" onclick="openInventory()">
+                                <i class="fas fa-backpack"></i>
+                                <span>Inventaris</span>
                             </button>
                         </div>
                     </div>
@@ -514,6 +586,39 @@
         </div>
     </div>
 
+    <!-- Inventory Modal -->
+    <div class="modal fade inventory-modal" id="inventoryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title w-100 text-center">
+                        <i class="fas fa-backpack"></i> Inventaris
+                    </h2>
+                </div>
+                <div class="modal-body py-4">
+                    <div class="inventory-section">
+                        <h4><i class="fas fa-gun"></i> Senjata</h4>
+                        <div id="weaponSection">
+                            <!-- Weapon items will be added here by JS -->
+                        </div>
+                    </div>
+
+                    <div class="inventory-section">
+                        <h4><i class="fas fa-apple-alt"></i> Makanan</h4>
+                        <div id="foodSection">
+                            <!-- Food items will be added here by JS -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer inventory-footer">
+                    <button class="btn btn-secondary w-100" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Game Over Modal -->
     <div class="modal fade game-over-modal" id="gameOverModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -529,7 +634,7 @@
                     </div>
                 </div>
                 <div class="modal-footer justify-content-center">
-                    <button class="btn btn-restart">
+                    <button class="btn btn-restart" onclick="restartGame()">
                         <i class="fas fa-sync-alt"></i> Main Lagi
                     </button>
                 </div>
@@ -589,12 +694,31 @@
             }
         };
 
+        // Definisi item inventaris
+        const weapons = [
+            { id: 'sword', name: 'Pedang Emas', icon: '🗡️', attack: 25, energy: 3 },
+            { id: 'bow', name: 'Busur Ajaib', icon: '🏹', attack: 20, energy: 2 },
+            { id: 'axe', name: 'Kapak Ganda', icon: '🪓', attack: 30, energy: 4 }
+        ];
+
+        const foods = [
+            { id: 'apple', name: 'Apel Merah', icon: '🍎', heal: 15, energy: 2 },
+            { id: 'pizza', name: 'Pizza Lezat', icon: '🍕', heal: 25, energy: 3 },
+            { id: 'ramen', name: 'Ramen', icon: '🍜', heal: 20, energy: 1 }
+        ];
+
         let selectedPlayerIndex = null;
         let currentPlayer = null;
         let opponent = null;
         let turn = 1;
         let isPlayerTurn = true;
         let gameOver = false;
+
+        // Inventaris pemain
+        let playerInventory = {
+            weapons: [],
+            foods: []
+        };
 
         function selectPlayer(index) {
             selectedPlayerIndex = index;
@@ -633,6 +757,9 @@
             opponent.hp = opponent.maxHp;
             opponent.pemain.energi = opponent.maxEnergy;
 
+            // Setup inventaris acak
+            setupInventory();
+
             // Setup UI
             document.getElementById('playerAvatar').textContent = currentPlayer.avatar;
             document.getElementById('playerName').textContent = `${currentPlayer.pemain.nama} (Anda)`;
@@ -645,6 +772,146 @@
 
             updateUI();
             updateTurnUI();
+        }
+
+        function setupInventory() {
+            // Pilih 2 senjata acak
+            const shuffledWeapons = [...weapons].sort(() => 0.5 - Math.random());
+            playerInventory.weapons = shuffledWeapons.slice(0, 2);
+
+            // Pilih 2 makanan acak
+            const shuffledFoods = [...foods].sort(() => 0.5 - Math.random());
+            playerInventory.foods = shuffledFoods.slice(0, 2);
+        }
+
+        function openInventory() {
+            if (!isPlayerTurn || gameOver) return;
+            renderInventory();
+            const modal = new bootstrap.Modal(document.getElementById('inventoryModal'));
+            modal.show();
+        }
+
+        function renderInventory() {
+            const weaponSection = document.getElementById('weaponSection');
+            const foodSection = document.getElementById('foodSection');
+
+            weaponSection.innerHTML = '';
+            foodSection.innerHTML = '';
+
+            // Render senjata
+            playerInventory.weapons.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item-card';
+                itemDiv.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-icon">${item.icon}</span>
+                        <div>
+                            <div><strong>${item.name}</strong></div>
+                            <div class="item-stats">⚔️ ${item.attack} | ⚡ ${item.energy}</div>
+                        </div>
+                    </div>
+                    <button class="btn-use-item" onclick="useWeapon('${item.id}')">Gunakan</button>
+                `;
+                weaponSection.appendChild(itemDiv);
+            });
+
+            // Render makanan
+            playerInventory.foods.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item-card';
+                itemDiv.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-icon">${item.icon}</span>
+                        <div>
+                            <div><strong>${item.name}</strong></div>
+                            <div class="item-stats">❤️ +${item.heal} | ⚡ +${item.energy}</div>
+                        </div>
+                    </div>
+                    <button class="btn-use-item" onclick="useFood('${item.id}')">Makan</button>
+                `;
+                foodSection.appendChild(itemDiv);
+            });
+
+            // Jika inventaris kosong
+            if (playerInventory.weapons.length === 0) {
+                weaponSection.innerHTML = '<p class="text-muted text-center">Tidak ada senjata</p>';
+            }
+            if (playerInventory.foods.length === 0) {
+                foodSection.innerHTML = '<p class="text-muted text-center">Tidak ada makanan</p>';
+            }
+        }
+
+        function useWeapon(weaponId) {
+            const weapon = playerInventory.weapons.find(w => w.id === weaponId);
+            if (!weapon) return;
+
+            if (currentPlayer.pemain.energi < weapon.energy) {
+                showMessage('❌ Energi tidak cukup untuk menggunakan item ini!');
+                return;
+            }
+
+            // Kurangi energi
+            currentPlayer.pemain.damage(weapon.energy);
+
+            // Serang lawan
+            opponent.hp = Math.max(0, opponent.hp - weapon.attack);
+
+            showMessage(`💥 ${currentPlayer.pemain.nama} menggunakan ${weapon.name}! ${opponent.pemain.nama} menerima ${weapon.attack} damage!`);
+
+            // Hapus item dari inventaris
+            playerInventory.weapons = playerInventory.weapons.filter(w => w.id !== weaponId);
+
+            updateUI();
+            closeInventory();
+
+            if (checkGameOver()) return;
+
+            // Ganti giliran
+            isPlayerTurn = false;
+            turn++;
+            updateTurnUI();
+
+            setTimeout(() => {
+                aiTurn();
+            }, 1500);
+        }
+
+        function useFood(foodId) {
+            const food = playerInventory.foods.find(f => f.id === foodId);
+            if (!food) return;
+
+            if (currentPlayer.pemain.energi < food.energy) {
+                showMessage('❌ Energi tidak cukup untuk menggunakan item ini!');
+                return;
+            }
+
+            // Kurangi energi
+            currentPlayer.pemain.damage(food.energy);
+
+            // Tambah HP
+            currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + food.heal);
+
+            showMessage(`🍽️ ${currentPlayer.pemain.nama} makan ${food.name}! HP +${food.heal}`);
+
+            // Hapus item dari inventaris
+            playerInventory.foods = playerInventory.foods.filter(f => f.id !== foodId);
+
+            updateUI();
+            closeInventory();
+
+            // Ganti giliran
+            isPlayerTurn = false;
+            turn++;
+            updateTurnUI();
+
+            setTimeout(() => {
+                aiTurn();
+            }, 1500);
+        }
+
+        function closeInventory() {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('inventoryModal'));
+            if (modal) modal.hide();
         }
 
         function updateUI() {
@@ -914,6 +1181,7 @@
             turn = 1;
             isPlayerTurn = true;
             selectedPlayerIndex = null;
+            playerInventory = { weapons: [], foods: [] };
 
             // Reset pemain energi
             pemain1.energi = 10;
